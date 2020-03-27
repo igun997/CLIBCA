@@ -1,0 +1,7 @@
+{
+    "require": {
+        "kadekjayak/bca-parser": "dev-master",
+        "wujunze/php-cli-color": "^2.4",
+        "php-school/cli-menu": "^4.0"
+    }
+}

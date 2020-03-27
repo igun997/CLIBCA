@@ -1,0 +1,171 @@
+<?php
+require 'vendor/autoload.php';
+use PhpSchool\CliMenu\CliMenu;
+use PhpSchool\CliMenu\Builder\CliMenuBuilder;
+use BCAParser\BCAParser;
+use Wujunze\Colors;
+
+$art = <<<ART
+
+
+          _|_|_|
+        _|
+          _|_|
+              _|
+        _|_|_|
+
+
+https://github.com/igun997
+(Singgajiantediundur)
+ART;
+
+$bca_saldo = function (CliMenu $menu) {
+    $colors = new Colors();
+    $args = $_SERVER["argv"];
+
+    if (isset($args[1]) && isset($args[2])) {
+      $arUser = $args[1];
+      $arPassword = $args[2];
+    }
+
+    if (isset($args[1]) && isset($args[2])) {
+      $username = $arUser;
+      $password = $arPassword;
+    }else {
+      $username = $menu->askText()
+          ->setPromptText('Enter User ID')
+          ->setPlaceholderText('XXXXX')
+          ->ask();
+
+
+
+      $password = $menu->askPassword()
+          ->setPromptText('Enter Password')
+          ->setValidationFailedText('Password must numeric')
+          ->setPlaceholderText('')
+          ->setValidator(function ($password) {
+              return is_numeric($password);
+          })
+          ->ask();
+
+      $username = $username->fetch();
+      $password = $password->fetch();
+    }
+
+    echo $colors->getColoredString("Login .. ","green",null).PHP_EOL;
+    $get = new BCAParser($username, $password);
+    echo $colors->getColoredString("Logged In ","green",null).PHP_EOL;
+    echo $colors->getColoredString("Get SALDO ..","green",null).PHP_EOL;
+    $saldo = $get->getSaldo();
+    echo $colors->getColoredString("Preparing .. ","green",null).PHP_EOL;
+    $get->logout();
+    echo $colors->getColoredString("Clear Cookies ","green",null).PHP_EOL;
+    if (isset($saldo[0]["saldo"])) {
+      echo $colors->getColoredString("Saldo Anda Dari Rekening ".$saldo[0]["rekening"]."  : ".$saldo[0]["saldo"],"green",null).PHP_EOL;
+    }else {
+      echo $colors->getColoredString("Maaf anda harus menunggu 5 menit lagi ","red","white").PHP_EOL;
+    }
+
+};
+
+$bca_mutasi = function (CliMenu $menu) {
+    $colors = new Colors();
+    $args = $_SERVER["argv"];
+
+    if (isset($args[1]) && isset($args[2])) {
+      $arUser = $args[1];
+      $arPassword = $args[2];
+    }
+
+    if (isset($args[1]) && isset($args[2])) {
+      $username = $arUser;
+      $password = $arPassword;
+    }else {
+      $username = $menu->askText()
+          ->setPromptText('Enter User ID')
+          ->setPlaceholderText('XXXXX')
+          ->ask();
+
+      $password = $menu->askPassword()
+          ->setPromptText('Enter Password')
+          ->setValidationFailedText('Password must numeric')
+          ->setPlaceholderText('')
+          ->setValidator(function ($password) {
+              return is_numeric($password);
+          })
+          ->ask();
+
+      $username = $username->fetch();
+      $password = $password->fetch();
+    }
+
+    $from = $menu->askText()
+        ->setPromptText('From Date ')
+        ->setPlaceholderText('(DD-MM-YYYY)')
+        ->ask();
+
+    $to = $menu->askText()
+        ->setPromptText('To Date ')
+        ->setPlaceholderText('(DD-MM-YYYY)')
+        ->ask();
+
+    $dateFrom = strtotime($from->fetch());
+    $dateTo = strtotime($to->fetch());
+
+    echo $colors->getColoredString("Validating Date .. ","green",null).PHP_EOL;
+    if (!$dateFrom && !$dateTo) {
+      $dateTo = time();
+      $dateFrom = strtotime("-2 day",$dateTo);
+      echo $colors->getColoredString("Set To 2 Days Ago  .. ","green",null).PHP_EOL;
+    }else {
+      if ((!$dateFrom || !$dateTo) || ($dateFrom > $dateTo)) {
+        echo $colors->getColoredString("Date Invalid ","red",null).PHP_EOL;
+        return false;
+      }else {
+        echo $colors->getColoredString("Date Valid ","green",null).PHP_EOL;
+      }
+    }
+
+
+    echo $colors->getColoredString("Login .. ","green",null).PHP_EOL;
+    $get = new BCAParser($username, $password);
+    echo $colors->getColoredString("Logged In ","green",null).PHP_EOL;
+    echo $colors->getColoredString("Get Mutasi ..","green",null).PHP_EOL;
+    $mutasi = $get->getListTransaksi(date("Y-m-d",$dateFrom),date("Y-m-d",$dateTo));
+    echo $colors->getColoredString("Preparing .. ","green",null).PHP_EOL;
+    $get->logout();
+    echo $colors->getColoredString("Clear Cookies ","green",null).PHP_EOL;
+    echo $colors->getColoredString("-------------------------------- ",null,"white").PHP_EOL;
+    if (count($mutasi) > 0) {
+      foreach ($mutasi as $key => $value) {
+
+        if($value["flows"] == "CR"){
+          echo $colors->getColoredString($value["date"]." - Rp. ".$value["description"][count($value["description"]) - 1]." (".$value["description"][2].")","green",null).PHP_EOL;
+        }else {
+          echo $colors->getColoredString($value["date"]." - Rp. ".$value["description"][count($value["description"]) - 1]." (".$value["description"][2].")","red",null).PHP_EOL;
+        }
+
+      }
+    }else {
+      echo $colors->getColoredString("Username & Password Salah atau Transaksi Tidak Ditemukan ","red",null).PHP_EOL;
+    }
+    echo $colors->getColoredString("-------------------------------- ",null,"white").PHP_EOL;
+
+};
+
+$menu = (new CliMenuBuilder)
+    ->addAsciiArt($art)
+    ->addLineBreak("=")
+    ->setTitle('BCA  CLI V0.1')
+    ->addItem('Cek Saldo', $bca_saldo)
+    ->addItem('Cek Mutasi', $bca_mutasi)
+    ->setBackgroundColour('237')
+    ->setForegroundColour('156')
+    ->setBorder(0, 0, 0, 2, '165')
+    ->setPaddingTopBottom(4)
+    ->setPaddingLeftRight(8)
+    ->addLineBreak('-')
+    ->setMarginAuto()
+    ->build();
+
+$menu->open();
