@@ -4,6 +4,15 @@ use PhpSchool\CliMenu\CliMenu;
 use PhpSchool\CliMenu\Builder\CliMenuBuilder;
 use BCAParser\BCAParser;
 use Wujunze\Colors;
+use noximo\PHPColoredAsciiLinechart\Linechart;
+use noximo\PHPColoredAsciiLinechart\Settings;
+use noximo\PHPColoredAsciiLinechart\Chart;
+use noximo\PHPColoredAsciiLinechart\Colorizers\AsciiColorizer;
+
+function parsed($number)
+{
+  return $parsed = floatval(preg_replace('/[^\d.]/', '',($number)));
+}
 
 $art = <<<ART
 
@@ -18,6 +27,7 @@ $art = <<<ART
 https://github.com/igun997
 (Singgajiantediundur)
 ART;
+
 
 $bca_saldo = function (CliMenu $menu) {
     $colors = new Colors();
@@ -69,8 +79,12 @@ $bca_saldo = function (CliMenu $menu) {
 };
 
 $bca_mutasi = function (CliMenu $menu) {
+
     $colors = new Colors();
     $args = $_SERVER["argv"];
+    $linechart = new Linechart();
+
+
 
     if (isset($args[1]) && isset($args[2])) {
       $arUser = $args[1];
@@ -136,16 +150,82 @@ $bca_mutasi = function (CliMenu $menu) {
     $get->logout();
     echo $colors->getColoredString("Clear Cookies ","green",null).PHP_EOL;
     echo $colors->getColoredString("-------------------------------- ",null,"white").PHP_EOL;
+
+    $jdF = date("d",$dateFrom);
+    $jdT = date("d",$dateTo);
+
+    $jdArray = [];
+
+    for ($i=$jdF; $i <= $jdT ; $i++) {
+      $jdArray[$i] = [0];
+    }
+
+
     if (count($mutasi) > 0) {
+      $red = [];
+      $green = [];
+      $text = [];
+      $statistik = [];
       foreach ($mutasi as $key => $value) {
 
+        $value["date"] = ($value["date"] == "PEND")?date("Y-m-d",$dateTo):$value["date"];
+
+        $rm = $value["description"][count($value["description"]) - 1];
+
         if($value["flows"] == "CR"){
-          echo $colors->getColoredString($value["date"]." - Rp. ".$value["description"][count($value["description"]) - 1]." (".$value["description"][2].")","green",null).PHP_EOL;
+          $text[] = $colors->getColoredString($value["date"]." - Rp. ".$rm." (".$value["description"][2].")","green",null).PHP_EOL;
+
         }else {
-          echo $colors->getColoredString($value["date"]." - Rp. ".$value["description"][count($value["description"]) - 1]." (".$value["description"][2].")","red",null).PHP_EOL;
+          $text[] = $colors->getColoredString($value["date"]." - Rp. ".$rm." (".$value["description"][2].")","red",null).PHP_EOL;
+        }
+
+        foreach ($jdArray as $k => &$sa) {
+
+          if ($k == date("d",strtotime($value["date"]))) {
+            if($value["flows"] == "CR"){
+              $sa[] = parsed($rm)*1;
+            }else {
+              $sa[] = parsed($rm)*-1;
+            }
+            break;
+          }
+
+
         }
 
       }
+
+      $statistik = [];
+
+      // Skala 1000;
+
+      foreach ($jdArray as $key => $value) {
+        $statistik[] = array_sum($value);
+      }
+
+      // var_dump($red);
+      $settings = new Settings();
+      $settings
+        ->setColorizer(new AsciiColorizer())  // Colorizer, choose between Ascii, HTML and image colorizers
+        ->setFPS(10)  // Control speed of chart::wait method
+        ->setHeight(10)  // Set fixed height of chart. chart will scale accordingly. If not set, height will be calculated based on highest and lowest numbers across all sets of markers.
+        ->setPadding(1, ' ')  // Set lenght of a padding and character used
+        ->setOffset(10)  // Offset left border
+        ;
+
+      $linechart->setSettings($settings);
+
+      echo $colors->getColoredString("Statistik DB & CR Periode ".date("Y-m-d",$dateFrom)." - ".date("Y-m-d",$dateTo) ,"blue",null).PHP_EOL;
+      $linechart->addMarkers($statistik,[AsciiColorizer::CYAN])->chart()->print();
+
+      // foreach ($statistik as $key => $value) {
+      //   echo $value.PHP_EOL;
+      // }
+
+      foreach ($text as $key => $value) {
+        echo $value;
+      }
+
     }else {
       echo $colors->getColoredString("Username & Password Salah atau Transaksi Tidak Ditemukan ","red",null).PHP_EOL;
     }

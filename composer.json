@@ -2,6 +2,7 @@
     "require": {
         "kadekjayak/bca-parser": "dev-master",
         "wujunze/php-cli-color": "^2.4",
-        "php-school/cli-menu": "^4.0"
+        "php-school/cli-menu": "^4.0",
+        "noximo/php-colored-ascii-linechart": "^1.1"
     }
 }
